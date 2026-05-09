@@ -1,0 +1,30 @@
+/.DS_Store
+/out
+# Java
+target/
+*.class
+
+# Maven
+.mvn/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Node
+node_modules/
+build/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Environment
+.env

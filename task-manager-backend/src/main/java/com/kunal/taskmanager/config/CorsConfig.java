@@ -6,6 +6,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+
+import java.util.List;
+
 @Configuration
 public class CorsConfig {
 
@@ -15,7 +18,7 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedOrigin(List.of("https://ai-task-management-ui.vercel.app"));
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
 

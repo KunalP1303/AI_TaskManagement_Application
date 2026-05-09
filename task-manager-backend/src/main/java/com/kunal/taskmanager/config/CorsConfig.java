@@ -1,30 +1,40 @@
 package com.kunal.taskmanager.config;
 
-import org.springframework.web.filter.CorsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
 
-
-import java.util.List;
+import java.util.Arrays;
 
 @Configuration
 public class CorsConfig {
 
     @Bean
-    public CorsFilter corsFilter(){
+    public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
+        configuration.setAllowedOrigins(
+                Arrays.asList("https://ai-task-management-ui.vercel.app")
+        );
+
+        configuration.setAllowedMethods(
+                Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")
+        );
+
+        configuration.setAllowedHeaders(
+                Arrays.asList("*")
+        );
+
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOrigin(List.of("https://ai-task-management-ui.vercel.app"));
-        configuration.addAllowedHeader("*");
-        configuration.addAllowedMethod("*");
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**",configuration);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
 
-        return new CorsFilter(source);
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 }

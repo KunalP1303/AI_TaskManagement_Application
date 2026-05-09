@@ -9,7 +9,7 @@ import { getTasks, createTask, deleteTask } from "./api/taskApi";
 function App() {
 
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const [statusFilter, setStatusFilter] = useState("ALL");

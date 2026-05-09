@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = "http://localhost:8080/";
+const BASE_URL = "https://ai-task-backend-2zjn.onrender.com";
 
 // Create axio instance
 const api = axios.create({

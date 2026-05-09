@@ -12,7 +12,7 @@ public class AIService {
     private final RestTemplate restTemplate;
 
     public AIResponse analyzeTask(AIRequest request){
-        String url = "http://localhost:8000/analyze-task";
+        String url = "https://ai-task-ai-service.onrender.com/analyze-task";
 
         return restTemplate.postForObject(
                 url,

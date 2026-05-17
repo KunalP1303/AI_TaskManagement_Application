@@ -15,11 +15,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntime(RuntimeException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
-    }
-
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<String> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
@@ -60,13 +55,20 @@ public class GlobalExceptionHandler {
         );
     }
 
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<APIResponse<String>> handleGenericException(Exception ex) {
-//
-//        return ResponseEntity.internalServerError().body(
-//                new APIResponse<>(false, "Something went wrong", null)
-//        );
-//    }
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<APIResponse<String>> handleUnauthorizedAccess(
+            UnauthorizedAccessException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new APIResponse<>(false, ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<APIResponse<String>> handleGenericException(Exception ex) {
+
+        return ResponseEntity.internalServerError().body(
+                new APIResponse<>(false, "Something went wrong", null)
+        );
+    }
 
 
 }

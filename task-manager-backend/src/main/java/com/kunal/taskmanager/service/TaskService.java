@@ -5,16 +5,22 @@ import com.kunal.taskmanager.DTO.AIResponse;
 import com.kunal.taskmanager.DTO.TaskRequestDTO;
 import com.kunal.taskmanager.DTO.TaskResponseDTO;
 import com.kunal.taskmanager.entity.Task;
+import com.kunal.taskmanager.entity.User;
 import com.kunal.taskmanager.enums.Priority;
 import com.kunal.taskmanager.enums.Status;
 import com.kunal.taskmanager.exception.ResourceNotFoundException;
 import com.kunal.taskmanager.repository.TaskRepository;
+import com.kunal.taskmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -22,9 +28,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskService {
 
+    private final Logger logger = LoggerFactory.getLogger(TaskService.class);
+
     private final TaskRepository repository;
     private final AIService aiService;
+    private final UserRepository userRepository;
 
+    private User getCurrentUser(){
+        String userName = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+        return userRepository.findByUsername(userName)
+                .orElseThrow(() -> new ResourceNotFoundException("User Not Found"));
+    }
+
+    @Transactional
     public TaskResponseDTO createTask(TaskRequestDTO dto) {
         AIRequest aiRequest = new AIRequest();
         aiRequest.setTitle(dto.getTitle());
@@ -32,7 +50,7 @@ public class TaskService {
 
         AIResponse aiResponse = aiService.analyzeTask(aiRequest);
 
-        System.out.println("AI RESPONSE: " + aiResponse);
+        logger.info("AI response received: {}", aiResponse);
 
         if (aiResponse.getSuggested_priority() == null) {
             throw new RuntimeException("AI response is null");
@@ -44,26 +62,14 @@ public class TaskService {
         task.setEstimatedEffort(aiResponse.getEstimated_effort());
         task.setSummary(aiResponse.getSummary());
         task.setStatus(dto.getStatus());
+        task.setUser(getCurrentUser());
 
-
-
-        Task saved = repository.save(task);
-
-        return new TaskResponseDTO(
-                saved.getId(),
-                saved.getTitle(),
-                saved.getDescription(),
-                saved.getPriority(),
-                saved.getStatus(),
-                saved.getCreatedAt(),
-                saved.getEstimatedEffort(),
-                saved.getSummary()
-        );
+        return mapToResponseDTO(repository.save(task));
     }
 
     public Page<TaskResponseDTO> getAllTasks(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return repository.findAll(pageable).map(this::mapToResponseDTO);
+        return repository.findByUser(getCurrentUser(),pageable).map(this::mapToResponseDTO);
     }
 
     private TaskResponseDTO mapToResponseDTO(Task task) {
@@ -80,42 +86,44 @@ public class TaskService {
         return dto;
     }
 
+    @Transactional
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO dto) {
+        User currentUser = getCurrentUser();
         Task task = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        if (!task.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Unauthorized");
+        }
 
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
         task.setPriority(dto.getPriority());
         task.setStatus(dto.getStatus());
 
-        Task updated = repository.save(task);
-
-        return new TaskResponseDTO(
-                updated.getId(),
-                updated.getTitle(),
-                updated.getDescription(),
-                updated.getPriority(),
-                updated.getStatus(),
-                updated.getCreatedAt(),
-                updated.getEstimatedEffort(),
-                updated.getEstimatedEffort()
-        );
+        return mapToResponseDTO(repository.save(task));
     }
 
+    @Transactional
     public void delete(Long id) {
+        User currentUser = getCurrentUser();
+
         Task task = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        if (!task.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Unauthorized");
+        }
 
         repository.delete(task);
     }
 
     public Page<TaskResponseDTO> filterTasks(Status status, Priority priority, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return repository.findByStatusAndPriority(status, priority, pageable).map(this::mapToResponseDTO);
+        return repository.findByUserAndStatusAndPriority(getCurrentUser(),status, priority, pageable).map(this::mapToResponseDTO);
     }
 
     public Page<TaskResponseDTO> searchTasks(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return repository.findByTitleContainingIgnoreCase(keyword, pageable).map(this::mapToResponseDTO);
+        return repository.findByUserAndTitleContainingIgnoreCase(getCurrentUser(),keyword, pageable).map(this::mapToResponseDTO);
     }
 
 }

@@ -12,14 +12,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/tasks")
 @RequiredArgsConstructor
-@CrossOrigin
 public class TaskController {
+
+    private final Logger logger = LoggerFactory.getLogger(TaskController.class);
 
     private final TaskService service;
 

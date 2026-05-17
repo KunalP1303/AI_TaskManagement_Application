@@ -33,10 +33,7 @@ function App() {
     try {
       setLoading(true);
       const response = await getTasks();
-
-      console.log("RESPONSE:", response);
-
-      setTasks(response.data.data.content); // ✅ FIXED
+      setTasks(response.data.data.content);
 
     } catch (err) {
       setError("Failed to fetch tasks");
@@ -68,14 +65,7 @@ function App() {
     window.location.href = "/auth/login";
   };
 
-  <div style={{ textAlign: "center", marginTop: "100px" }}>
-    <h2>Loading Tasks...</h2>
-  </div>
   if (error) return <p>{error}</p>;
-
-  console.log("TASKS STATE:", tasks);
-  console.log("IS ARRAY:", Array.isArray(tasks));
-
   const filteredTasks = Array.isArray(tasks)
     ? tasks.filter((task) => {
       return (

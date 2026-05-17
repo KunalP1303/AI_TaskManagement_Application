@@ -3,7 +3,7 @@ import TaskCard from "./TaskCard";
 
 function TaskList({ tasks, onDelete}) {
 
-    if (tasks.lenght === 0) {
+    if (tasks.length === 0) {
         return <p>No Task Found.</p>;
     }
 

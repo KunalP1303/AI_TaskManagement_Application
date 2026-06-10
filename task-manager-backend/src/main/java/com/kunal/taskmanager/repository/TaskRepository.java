@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
@@ -21,4 +23,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     Page<Task> findByUserAndStatusAndPriority(User user, Status status, Priority priority, Pageable pageable);
 
     Page<Task> findByUserAndTitleContainingIgnoreCase(User user, String keyword, Pageable pageable);
+
+    Optional<Task> findByIdAndUser(Long Id, User user);
+
 }

@@ -1,5 +1,6 @@
 package com.kunal.taskmanager.service;
 
+import com.kunal.taskmanager.common.APIResponse;
 import com.kunal.taskmanager.entity.User;
 import com.kunal.taskmanager.repository.UserRepository;
 import com.kunal.taskmanager.security.JwtUtil;
@@ -15,14 +16,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public void register(String username, String password){
+    public APIResponse<String> register(String username, String password) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+
         User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
         userRepository.save(user);
+
+        return new APIResponse<>(true, "User Registered successfully", null);
     }
 
-    public String login(String username, String password){
+    public APIResponse<String> login(String username, String password){
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -30,6 +37,6 @@ public class AuthService {
             throw new RuntimeException("Invalid Credentials");
         }
 
-        return jwtUtil.generateToken(username);
+        return new APIResponse<>(true, "User Logged In successfully", jwtUtil.generateToken(username));
     }
 }

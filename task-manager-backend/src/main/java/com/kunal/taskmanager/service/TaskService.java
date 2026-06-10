@@ -48,6 +48,8 @@ public class TaskService {
         aiRequest.setTitle(dto.getTitle());
         aiRequest.setDescription(dto.getDescription());
 
+        User user = getCurrentUser();
+
         AIResponse aiResponse = aiService.analyzeTask(aiRequest);
 
         logger.info("AI response received: {}", aiResponse);
@@ -62,7 +64,7 @@ public class TaskService {
         task.setEstimatedEffort(aiResponse.getEstimated_effort());
         task.setSummary(aiResponse.getSummary());
         task.setStatus(dto.getStatus());
-        task.setUser(getCurrentUser());
+        task.setUser(user);
 
         return mapToResponseDTO(repository.save(task));
     }
@@ -89,11 +91,7 @@ public class TaskService {
     @Transactional
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO dto) {
         User currentUser = getCurrentUser();
-        Task task = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-
-        if (!task.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized");
-        }
+        Task task = repository.findByIdAndUser(id,currentUser).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
@@ -107,11 +105,7 @@ public class TaskService {
     public void delete(Long id) {
         User currentUser = getCurrentUser();
 
-        Task task = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-
-        if (!task.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Unauthorized");
-        }
+        Task task = repository.findByIdAndUser(id, currentUser).orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         repository.delete(task);
     }

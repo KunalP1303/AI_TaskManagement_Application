@@ -8,10 +8,14 @@ import com.kunal.taskmanager.entity.Task;
 import com.kunal.taskmanager.entity.User;
 import com.kunal.taskmanager.enums.Priority;
 import com.kunal.taskmanager.enums.Status;
+import com.kunal.taskmanager.event.TaskCreatedEvent;
 import com.kunal.taskmanager.exception.ResourceNotFoundException;
+import com.kunal.taskmanager.kafka.TaskEventProducer;
 import com.kunal.taskmanager.repository.TaskRepository;
 import com.kunal.taskmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +38,7 @@ public class TaskService {
     private final TaskRepository repository;
     private final AIService aiService;
     private final UserRepository userRepository;
+    private final TaskEventProducer taskEventProducer;
 
     private User getCurrentUser(){
         String userName = SecurityContextHolder.getContext()
@@ -42,21 +48,31 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("User Not Found"));
     }
 
+    @CacheEvict(value = "tasks", allEntries = true)
     @Transactional
     public TaskResponseDTO createTask(TaskRequestDTO dto) {
         AIRequest aiRequest = new AIRequest();
         aiRequest.setTitle(dto.getTitle());
         aiRequest.setDescription(dto.getDescription());
 
-        User user = getCurrentUser();
+        AIResponse aiResponse;
+        try{
+            aiResponse = aiService.analyzeTask(aiRequest)
+                    .orTimeout(3, TimeUnit.SECONDS)
+                    .exceptionally(ex -> {
+                        logger.warn("AI ervice timed out or failed: {}", ex.getMessage());
+                        return aiService.buildFallback();
+                    })
+                    .join();
+        } catch (Exception ex) {
+            logger.warn("Unexpected error during AI call: {}", ex.getMessage());
+            aiResponse = aiService.buildFallback();
+        }
 
-        AIResponse aiResponse = aiService.analyzeTask(aiRequest);
+        User user = getCurrentUser();
 
         logger.info("AI response received: {}", aiResponse);
 
-        if (aiResponse.getSuggested_priority() == null) {
-            throw new RuntimeException("AI response is null");
-        }
         Task task = new Task();
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
@@ -66,9 +82,23 @@ public class TaskService {
         task.setStatus(dto.getStatus());
         task.setUser(user);
 
-        return mapToResponseDTO(repository.save(task));
+        Task savedTask = repository.save(task);
+
+        TaskCreatedEvent event = new TaskCreatedEvent(
+                savedTask.getId(),
+                user.getUsername(),
+                savedTask.getTitle(),
+                savedTask.getCreatedAt()
+        );
+        taskEventProducer.publishTaskCreated(event);
+
+        return mapToResponseDTO(savedTask);
     }
 
+    @Cacheable(
+            value = "tasks",
+            key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + '_' + #page + '_' + #size"
+    )
     public Page<TaskResponseDTO> getAllTasks(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return repository.findByUser(getCurrentUser(),pageable).map(this::mapToResponseDTO);
@@ -88,6 +118,7 @@ public class TaskService {
         return dto;
     }
 
+    @CacheEvict(value = "tasks", allEntries = true)
     @Transactional
     public TaskResponseDTO updateTask(Long id, TaskRequestDTO dto) {
         User currentUser = getCurrentUser();
@@ -101,6 +132,7 @@ public class TaskService {
         return mapToResponseDTO(repository.save(task));
     }
 
+    @CacheEvict(value = "tasks", allEntries = true)
     @Transactional
     public void delete(Long id) {
         User currentUser = getCurrentUser();
@@ -120,4 +152,10 @@ public class TaskService {
         return repository.findByUserAndTitleContainingIgnoreCase(getCurrentUser(),keyword, pageable).map(this::mapToResponseDTO);
     }
 
+    public TaskResponseDTO getTaskById(Long id) {
+        User currentUser = getCurrentUser();
+        Task task = repository.findByIdAndUser(id, currentUser)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+        return mapToResponseDTO(task);
+    }
 }

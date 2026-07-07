@@ -10,6 +10,7 @@ import com.kunal.taskmanager.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
@@ -27,8 +28,9 @@ public class TaskController {
     private final TaskService service;
 
     @PostMapping
-    public TaskResponseDTO create(@Valid @RequestBody TaskRequestDTO dto) {
-        return service.createTask(dto);
+    @ResponseStatus(HttpStatus.CREATED)
+    public APIResponse<TaskResponseDTO> create(@Valid @RequestBody TaskRequestDTO dto) {
+        return new APIResponse<>(true, "Task created successfully",service.createTask(dto));
     }
 
     @GetMapping
@@ -60,5 +62,12 @@ public class TaskController {
     public APIResponse<Page<TaskResponseDTO>> searchTasks(@RequestParam String keyword, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
         Page<TaskResponseDTO> tasks = service.searchTasks(keyword, page, size);
         return new APIResponse<>(true, "Tasks Fetched Successfully", tasks);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<APIResponse<TaskResponseDTO>> getById(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(
+                new APIResponse<>(true, "Task fetched", service.getTaskById(id)));
     }
 }

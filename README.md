@@ -1,24 +1,5 @@
 # AI-Powered Task Management System
 
-## Overview
-
-A production-grade AI-powered full-stack task management platform built using Spring Boot, React, FastAPI, PostgreSQL, Docker, Render, and Vercel.
-
-The system enables users to securely manage tasks while leveraging AI-powered task analysis for intelligent prioritization, effort estimation, and task summarization.
-
-This project was designed to simulate real-world product engineering challenges including:
-
-* Full-stack architecture
-* JWT-based authentication
-* REST API design
-* AI microservice integration
-* Dockerized deployment
-* Cloud-native deployment
-* Distributed system communication
-* Production debugging
-
----
-
 # Live Application
 
 ## Frontend (Vercel)
@@ -40,6 +21,23 @@ This project was designed to simulate real-world product engineering challenges 
 ## GitHub Repository
 
 [https://github.com/KunalP1303/AI_TaskManagement_Application](https://github.com/KunalP1303/AI_TaskManagement_Application)
+
+## Overview
+
+A production-grade AI-powered full-stack task management platform built using Spring Boot, React, FastAPI, PostgreSQL, Docker, Render, and Vercel.
+
+The system enables users to securely manage tasks while leveraging AI-powered task analysis for intelligent prioritization, effort estimation, and task summarization.
+
+This project was designed to simulate real-world product engineering challenges including:
+
+* Full-stack architecture
+* JWT-based authentication
+* REST API design
+* AI microservice integration
+* Dockerized deployment
+* Cloud-native deployment
+* Distributed system communication
+* Production debugging
 
 ---
 
